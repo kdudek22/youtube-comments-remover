@@ -1,49 +1,17 @@
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { SyncLoader } from "react-spinners"
-import { patterns } from "./pattenrs"
+
 
 function App() {
   const [isLoading, setIsLoading] = useState<boolean>(false)
   const [removedCommentsCount, setRemovedCommentsCount] = useState(0)
   const [removedComments, setRemovedComments] = useState(false)
 
-  const removeButtonsClicked = async () => {
-    setIsLoading(true)
-    let [tab] = await chrome.tabs.query({active: true})
+  useEffect(() => {
+    chrome.action.setBadgeText({ text: removedCommentsCount.toString() })
 
-    chrome.scripting.executeScript<any, void>({
-      target: {tabId: tab.id!}, args:[patterns], func : (patterns: string[]) => {
+  },[removedCommentsCount])
 
-        const regexPatterns: RegExp[] = patterns.map(p => RegExp(p))
-        
-        const checkIfCommentMatchesRegex = (comment: string): boolean => {
-          for(let pattern of regexPatterns){
-            if(pattern.test(comment)){
-              return true
-            }
-          }
-          return false
-        }
-
-        console.log(regexPatterns)
-
-        let removedCommentsCount: number = 0
-        const comments = document.getElementsByTagName("ytd-comment-thread-renderer") as HTMLCollectionOf<HTMLElement>;
-
-        for(let comment of comments){
-          const commentText: string = comment.getElementsByClassName("yt-core-attributed-string")[0].textContent!
-          if(checkIfCommentMatchesRegex(commentText)){
-              removedCommentsCount += 1
-              comment.style.display = "none"
-          }
-        }
-
-        chrome.runtime.sendMessage({type: "removedCommentCountMessage", count: removedCommentsCount})
-      }
-    })
-    setIsLoading(false)
-    setRemovedComments(true)
-  }
   const undoRemovingComments = async () => {
     setIsLoading(true)
     let [tab] = await chrome.tabs.query({active: true})
@@ -56,11 +24,13 @@ function App() {
           }
         }
       }})
+      setRemovedCommentsCount(0)
       setRemovedComments(false)
       setIsLoading(false)
   }
 
   chrome.runtime.onMessage.addListener((message) => {
+    console.log(message)
     if(message.type == "removedCommentCountMessage"){
       setRemovedCommentsCount(message.count)
     }
@@ -71,7 +41,7 @@ function App() {
     <>
       <div className="min-w-64 p-3 flex flex-col items-center gap-3">
         <h1 className="font-bold">Youtube comments remover</h1>
-        <button onClick={removeButtonsClicked} className="bg-blue-400 px-2 py-1 rounded-xl text-white ">Remove comments</button>
+        <button className="bg-blue-400 px-2 py-1 rounded-xl text-white ">Remove comments</button>
         
         {removedComments && <>
           <p>Removed {removedCommentsCount} comments</p>
