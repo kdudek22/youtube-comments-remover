@@ -1,0 +1,10 @@
+{
+    "name": "Youtube comment remover",
+    "version": "1.0.0",
+    "manifest_version": 3,
+    "action":{
+        "default_popup": "index.html"
+    },
+    "permissions": ["scripting", "storage"],
+    "host_permissions": ["https://*.youtube.com/*"]
+}
